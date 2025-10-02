@@ -1,0 +1,28 @@
+{
+  "conf_mode": [
+    "exp",
+    1,
+    Infinity
+  ],
+  "dec_depth": 12,
+  "dec_embed_dim": 768,
+  "dec_num_heads": 12,
+  "depth_mode": [
+    "exp",
+    -Infinity,
+    Infinity
+  ],
+  "enc_depth": 24,
+  "enc_embed_dim": 1024,
+  "enc_num_heads": 16,
+  "freeze": "none",
+  "head_type": "dpt",
+  "img_size": [
+    512,
+    512
+  ],
+  "landscape_only": false,
+  "output_mode": "pts3d",
+  "patch_embed_cls": "PatchEmbedDust3R",
+  "pos_embed": "RoPE100"
+}

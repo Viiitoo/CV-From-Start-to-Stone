@@ -1,0 +1,23 @@
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_setup.py:_flush():81] Current SDK version is 0.21.3
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_setup.py:_flush():81] Configure stats pid to 6127
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_setup.py:_flush():81] Loading settings from /root/.config/wandb/settings
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_setup.py:_flush():81] Loading settings from /workspace/lsx_MonoGS/wandb/settings
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_init.py:setup_run_log_directory():686] Logging user logs to /workspace/lsx_MonoGS/wandb/offline-run-20250924_132120-vd75piso/logs/debug.log
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_init.py:setup_run_log_directory():687] Logging internal logs to /workspace/lsx_MonoGS/wandb/offline-run-20250924_132120-vd75piso/logs/debug-internal.log
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_init.py:init():813] calling init triggers
+2025-09-24 13:21:20,948 INFO    MainThread:6127 [wandb_init.py:init():818] wandb.init called with sweep_config: {}
+config: {'Results': {'save_results': True, 'save_dir': 'results/_dataset/2025-09-24-13-21-19', 'save_trj': True, 'save_trj_kf_intv': 10, 'use_gui': False, 'eval_rendering': True, 'use_wandb': True}, 'Dataset': {'type': 'tum', 'sensor_type': 'monocular', 'pcd_downsample': 64, 'pcd_downsample_init': 32, 'adaptive_pointsize': True, 'point_size': 0.01, 'dataset_path': '/dataset/rgbd_dataset_freiburg3_long_office_household', 'Calibration': {'fx': 535.4, 'fy': 539.2, 'cx': 320.1, 'cy': 247.6, 'k1': 0.0, 'k2': 0.0, 'p1': 0.0, 'p2': 0.0, 'k3': 0.0, 'width': 640, 'height': 480, 'depth_scale': 5000.0, 'distorted': False}}, 'Training': {'init_itr_num': 1050, 'init_gaussian_update': 100, 'init_gaussian_reset': 500, 'init_gaussian_th': 0.005, 'init_gaussian_extent': 30, 'tracking_itr_num': 100, 'mapping_itr_num': 150, 'gaussian_update_every': 150, 'gaussian_update_offset': 50, 'gaussian_th': 0.7, 'gaussian_extent': 1.0, 'gaussian_reset': 2001, 'size_threshold': 20, 'kf_interval': 5, 'window_size': 8, 'pose_window': 3, 'edge_threshold': 1.1, 'rgb_boundary_threshold': 0.01, 'kf_translation': 0.08, 'kf_min_translation': 0.05, 'kf_overlap': 0.9, 'kf_cutoff': 0.3, 'prune_mode': 'slam', 'single_thread': False, 'spherical_harmonics': False, 'lr': {'cam_rot_delta': 0.003, 'cam_trans_delta': 0.001}}, 'opt_params': {'iterations': 30000, 'position_lr_init': 0.0016, 'position_lr_final': 1.6e-06, 'position_lr_delay_mult': 0.01, 'position_lr_max_steps': 30000, 'feature_lr': 0.0025, 'opacity_lr': 0.05, 'scaling_lr': 0.001, 'rotation_lr': 0.001, 'percent_dense': 0.01, 'lambda_dssim': 0.2, 'densification_interval': 100, 'opacity_reset_interval': 3000, 'densify_from_iter': 500, 'densify_until_iter': 15000, 'densify_grad_threshold': 0.0002}, 'model_params': {'sh_degree': 0, 'source_path': '', 'model_path': '', 'resolution': -1, 'white_background': False, 'data_device': 'cuda'}, 'pipeline_params': {'convert_SHs_python': False, 'compute_cov3D_python': False}, 'inherit_from': 'configs/mono/tum/base_config.yaml', '_wandb': {}}
+2025-09-24 13:21:20,949 INFO    MainThread:6127 [wandb_init.py:init():854] starting backend
+2025-09-24 13:21:21,190 INFO    MainThread:6127 [wandb_init.py:init():857] sending inform_init request
+2025-09-24 13:21:21,210 INFO    MainThread:6127 [wandb_init.py:init():865] backend started and connected
+2025-09-24 13:21:21,214 INFO    MainThread:6127 [wandb_init.py:init():936] updated telemetry
+2025-09-24 13:21:21,251 INFO    MainThread:6127 [wandb_init.py:init():960] communicating run to backend with 90.0 second timeout
+2025-09-24 13:21:21,377 INFO    MainThread:6127 [wandb_init.py:init():1011] starting run threads in backend
+2025-09-24 13:21:21,531 INFO    MainThread:6127 [wandb_run.py:_console_start():2494] atexit reg
+2025-09-24 13:21:21,531 INFO    MainThread:6127 [wandb_run.py:_redirect():2342] redirect: wrap_raw
+2025-09-24 13:21:21,532 INFO    MainThread:6127 [wandb_run.py:_redirect():2411] Wrapping output streams.
+2025-09-24 13:21:21,532 INFO    MainThread:6127 [wandb_run.py:_redirect():2434] Redirects installed.
+2025-09-24 13:21:21,534 INFO    MainThread:6127 [wandb_init.py:init():1057] run started, returning control to user process
+2025-09-24 13:23:18,495 INFO    wandb-AsyncioManager-main:6127 [service_client.py:_forward_responses():84] Reached EOF.
+2025-09-24 13:23:18,496 INFO    wandb-AsyncioManager-main:6127 [mailbox.py:close():137] Closing mailbox, abandoning 0 handles.

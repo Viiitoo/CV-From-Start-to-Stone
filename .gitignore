@@ -1,0 +1,6 @@
+datasets/
+results/
+media/
+*.safetensors
+*.tar
+*.zip

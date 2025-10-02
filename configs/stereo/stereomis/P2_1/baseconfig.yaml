@@ -1,0 +1,85 @@
+## SLAM parameters
+Results:
+  save_results: True
+  save_dir: "results/P2_1"
+  save_trj: True
+  save_trj_kf_intv: 5
+  use_gui: False
+  eval_rendering: False
+  use_wandb: False
+  use_cpu_queue: True
+
+Dataset:
+  type: 'stereomis'
+  sensor_type: 'stereo'
+  pcd_downsample: 128
+  pcd_downsample_init: 32
+  adaptive_pointsize: False
+  point_size: 0.1
+
+
+Training:
+  #Initialization
+  init_itr_num: 1050
+  init_gaussian_update: 100
+  init_gaussian_reset: 500
+  init_gaussian_th: 0.005
+  init_gaussian_extent: 30
+  # Tracking and Mapping
+  tracking_itr_num: 150
+  mapping_itr_num: 300
+  gaussian_update_every: 120
+  gaussian_update_offset: 50
+  gaussian_th: 0.5
+  gaussian_extent: 1.5
+  gaussian_reset: 2001
+  size_threshold: 20
+  kf_interval: 10
+  window_size: 8
+  pose_window: 5
+  edge_threshold: 1.1
+  rgb_boundary_threshold: 0.01
+  alpha: 0.9
+  kf_translation: 0.08
+  kf_min_translation: 0.08
+  kf_overlap: 0.9
+  kf_cutoff: 0.2
+  prune_mode: 'slam'
+  single_thread: False
+  spherical_harmonics: False
+  lr:
+    cam_rot_delta: 0.003
+    cam_trans_delta: 0.001
+
+
+
+## 3DGS default parameters
+opt_params:
+  iterations: 30000
+  position_lr_init: 0.001
+  position_lr_final: 0.000008
+  position_lr_delay_mult: 0.01
+  position_lr_max_steps: 30000
+  feature_lr: 0.005
+  opacity_lr: 0.05
+  scaling_lr: 0.002
+  rotation_lr: 0.002
+  percent_dense: 0.01
+  lambda_dssim: 0.2
+  densification_interval: 80
+  opacity_reset_interval: 3000
+  densify_from_iter: 500
+  densify_until_iter: 15000
+  densify_grad_threshold: 0.00008
+
+model_params:
+  sh_degree: 3
+  source_path: ""
+  model_path: ""
+  resolution: -1
+  white_background: False
+  data_device: "cuda"
+
+pipeline_params:
+  convert_SHs_python: False
+  compute_cov3D_python: False
