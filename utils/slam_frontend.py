@@ -169,7 +169,6 @@ class FrontEnd(mp.Process):
                 render_pkg["depth"],
                 render_pkg["opacity"],
             )
-            # print("render image shape:", image.shape)
             pose_optimizer.zero_grad()
             loss_tracking = get_loss_tracking(
                 self.config, image, depth, opacity, viewpoint
@@ -345,8 +344,7 @@ class FrontEnd(mp.Process):
 
             if self.frontend_queue.empty():
                 tic.record()
-                # if cur_frame_idx >= len(self.dataset):
-                if cur_frame_idx >= 200:
+                if cur_frame_idx >= len(self.dataset):
                     if self.save_results:
                         eval_ate(
                             self.cameras,
@@ -474,11 +472,6 @@ class FrontEnd(mp.Process):
                         cur_frame_idx,
                         monocular=self.monocular,
                     )
-                        # 例如：在第100帧时保存一次点云
-                    # if cur_frame_idx > 75:
-                    #     from utils.eval_utils import save_gaussians
-                    #     save_gaussians(self.gaussians, self.save_dir, f"frame_{cur_frame_idx}")
-
                 toc.record()
                 torch.cuda.synchronize()
                 if create_kf:

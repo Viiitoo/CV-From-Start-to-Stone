@@ -1,7 +1,7 @@
 inherit_from: "configs/rgbd/depthmis/base_config.yaml"
 
 Dataset:
-  dataset_path: "datasets/StereoMIS/rgbd_monomis"
+  dataset_path: "datasets/StereoMIS/stereo_seq_easy/train"
   Calibration:
       fx: 1033.894287109375
       fy: 1033.7147216796875

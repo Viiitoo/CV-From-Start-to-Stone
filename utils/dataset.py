@@ -191,135 +191,81 @@ class EuRoCParser:
 
 
 class MonomisParser:
-    def __init__(self, input_folder, start_idx=0, max_dt=0.08, frame_rate=32):
+    def __init__(self, input_folder):
         self.input_folder = input_folder
-        self.start_idx = start_idx
+        self.load_poses(self.input_folder, frame_rate=32)
+        self.n_img = len(self.color_paths)
 
-        # 文件列表路径
-        rgb_list = os.path.join(input_folder, "rgb.txt")
-        depth_list = os.path.join(input_folder, "depth.txt")
-        pose_list = os.path.join(input_folder, "groundtruth.txt")
+    def parse_list(self, filepath, skiprows=0):
+        data = np.loadtxt(filepath, delimiter=" ", dtype=np.unicode_, skiprows=skiprows)
+        return data
 
-        # 读取文件列表
-        self.image_data = self.parse_list(rgb_list)
-        self.depth_data = self.parse_list(depth_list)
-        self.pose_data = np.loadtxt(pose_list)
+    def associate_frames(self, tstamp_image, tstamp_depth, tstamp_pose, max_dt=0.08):
+        associations = []
+        for i, t in enumerate(tstamp_image):
+            if tstamp_pose is None:
+                j = np.argmin(np.abs(tstamp_depth - t))
+                if np.abs(tstamp_depth[j] - t) < max_dt:
+                    associations.append((i, j))
 
-        # 解析 pose (fid, tx, ty, tz, qx, qy, qz, qw)
-        self.pose_vecs = self.pose_data[:, 0:].astype(np.float64)
-        tstamp_image = self.image_data[:, 0].astype(np.float64)
-        tstamp_depth = self.depth_data[:, 0].astype(np.float64)
-        tstamp_pose = self.pose_data[:, 0].astype(np.float64)
+            else:
+                j = np.argmin(np.abs(tstamp_depth - t))
+                k = np.argmin(np.abs(tstamp_pose - t))
 
-        # 关联 RGB-D-Pose
-        associations = self.associate_frames(
-            tstamp_image, tstamp_depth, tstamp_pose, max_dt
-        )
+                if (np.abs(tstamp_depth[j] - t) < max_dt) and (
+                    np.abs(tstamp_pose[k] - t) < max_dt
+                ):
+                    associations.append((i, j, k))
 
-        # 按帧率采样
+        return associations
+
+    def load_poses(self, datapath, frame_rate=-1):
+        if os.path.isfile(os.path.join(datapath, "groundtruth.txt")):
+            pose_list = os.path.join(datapath, "groundtruth.txt")
+        elif os.path.isfile(os.path.join(datapath, "pose.txt")):
+            pose_list = os.path.join(datapath, "pose.txt")
+
+        image_list = os.path.join(datapath, "rgb.txt")
+        depth_list = os.path.join(datapath, "depth.txt")
+
+        image_data = self.parse_list(image_list)
+        depth_data = self.parse_list(depth_list)
+        pose_data = self.parse_list(pose_list, skiprows=1)
+        pose_vecs = pose_data[:, 0:].astype(np.float64)
+
+        tstamp_image = image_data[:, 0].astype(np.float64)
+        tstamp_depth = depth_data[:, 0].astype(np.float64)
+        tstamp_pose = pose_data[:, 0].astype(np.float64)
+        associations = self.associate_frames(tstamp_image, tstamp_depth, tstamp_pose)
+
         indicies = [0]
         for i in range(1, len(associations)):
             t0 = tstamp_image[associations[indicies[-1]][0]]
             t1 = tstamp_image[associations[i][0]]
             if t1 - t0 > 1.0 / frame_rate:
-                indicies.append(i)
+                indicies += [i]
 
-        # 存储路径和姿态
-        self.color_paths, self.depth_paths, self.poses = [], [], []
+        self.color_paths, self.poses, self.depth_paths, self.frames = [], [], [], []
+
+        # indicies = indicies[:100]
         for ix in indicies:
             (i, j, k) = associations[ix]
+            self.color_paths += [os.path.join(datapath, image_data[i, 1])]
+            self.depth_paths += [os.path.join(datapath, depth_data[j, 1])]
 
-            # ✅ 使用 txt 提供的相对路径
-            color_path = os.path.join(input_folder, self.image_data[i, 1])
-            depth_path = os.path.join(input_folder, self.depth_data[j, 1])
-
-            quat = self.pose_vecs[k][4:]  # qx qy qz qw
-            trans = self.pose_vecs[k][1:4]
-            q = np.array([quat[3], quat[0], quat[1], quat[2]])  # (qw,qx,qy,qz)
-            T = trimesh.transformations.quaternion_matrix(q)
+            quat = pose_vecs[k][4:]
+            trans = pose_vecs[k][1:4]
+            T = trimesh.transformations.quaternion_matrix(np.roll(quat, 1))
             T[:3, 3] = trans
-            pose = np.linalg.inv(T)
+            self.poses += [np.linalg.inv(T)]
 
-            self.color_paths.append(color_path)
-            self.depth_paths.append(depth_path)
-            self.poses.append(pose)
+            frame = {
+                "file_path": str(os.path.join(datapath, image_data[i, 1])),
+                "depth_path": str(os.path.join(datapath, depth_data[j, 1])),
+                "transform_matrix": (np.linalg.inv(T)).tolist(),
+            }
 
-        self.n_img = len(self.color_paths)
-
-        # 相机内参（取 StereoLeft）
-        self.intrinsics = self.load_intrinsics(
-            os.path.join(input_folder, "StereoCalibration.ini")
-        )
-
-        # Debug: 检查最后一个深度
-        if len(self.depth_paths) > 0:
-            dp = self.depth_paths[-1]
-            print("DEBUG depth path:", dp, os.path.exists(dp))
-            try:
-                test_d = np.array(Image.open(dp))
-                print(
-                    "DEBUG depth loaded:",
-                    test_d.shape,
-                    test_d.dtype,
-                    test_d.min(),
-                    test_d.max(),
-                )
-            except Exception as e:
-                print("DEBUG depth load failed:", e)
-
-    def parse_list(self, filepath, skiprows=0):
-        return np.loadtxt(filepath, delimiter=" ", dtype=np.unicode_, skiprows=skiprows)
-
-    def associate_frames(self, tstamp_image, tstamp_depth, tstamp_pose, max_dt=0.08):
-        associations = []
-        for i, t in enumerate(tstamp_image):
-            j = np.argmin(np.abs(tstamp_depth - t))
-            k = np.argmin(np.abs(tstamp_pose - t))
-            if (np.abs(tstamp_depth[j] - t) < max_dt) and (np.abs(tstamp_pose[k] - t) < max_dt):
-                associations.append((i, j, k))
-        return associations
-
-    def load_intrinsics(self, ini_path):
-        config = configparser.ConfigParser()
-        config.read(ini_path)
-        return {
-            "fx": float(config["StereoLeft"]["fc_x"]),
-            "fy": float(config["StereoLeft"]["fc_y"]),
-            "cx": float(config["StereoLeft"]["cc_x"]),
-            "cy": float(config["StereoLeft"]["cc_y"]),
-            "width": int(config["StereoLeft"]["res_x"]),
-            "height": int(config["StereoLeft"]["res_y"]),
-            "k1": 0.0,
-            "k2": 0.0,
-            "p1": 0.0,
-            "p2": 0.0,
-            "k3": 0.0,
-            "distorted": False,
-        }
-
-    # ✅ 关键：返回 RGB, depth, pose
-    def __getitem__(self, idx):
-        color_path = self.color_paths[idx]
-        depth_path = self.depth_paths[idx]
-        pose = self.poses[idx]
-
-        print(f"[DEBUG] idx={idx}")
-        print(f"  color_path={color_path}, exists={os.path.exists(color_path)}")
-        print(f"  depth_path={depth_path}, exists={os.path.exists(depth_path)}")
-
-        # 读取 RGB（uint8）
-        color = np.array(Image.open(color_path).convert("RGB"), dtype=np.uint8)
-
-        # 读取深度（uint16 → float32，保持尺度）
-        depth = np.array(Image.open(depth_path), dtype=np.uint16).astype(np.float32)
-
-        print(f"  color.shape={color.shape}, dtype={color.dtype}")
-        print(
-            f"  depth.shape={depth.shape}, dtype={depth.dtype}, min={depth.min()}, max={depth.max()}"
-        )
-
-        return color, depth, pose
-
+            self.frames.append(frame)
 
 
 class StereoMISParser:
@@ -653,63 +599,6 @@ class EurocDataset(StereoDataset):
         self.color_paths_r = parser.color_paths_r
         self.poses = parser.poses
 
-# class StereoMISDataset(StereoDataset):
-#     def __init__(self, args, path, config):
-#         super().__init__(args, path, config)
-#         dataset_path = config["Dataset"]["dataset_path"]
-#         parser = StereoMISParser(dataset_path, start_idx=config["Dataset"]["start_idx"])
-#         self.num_imgs = parser.n_img
-#         self.color_paths = parser.color_paths
-#         self.color_paths_r = parser.color_paths_r
-#         self.poses = parser.poses
-#         ds_cfg = config.get("Dataset", {})
-#         mask_dir = ds_cfg.get("mask_dir", os.path.join(dataset_path, "masks"))
-#         # 假设与左相机图片同名（按左相机对齐）
-#         self.mask_paths = [
-#             os.path.join(mask_dir, os.path.basename(p)) for p in self.color_paths
-#         ]
-
-#     def __getitem__(self, idx):
-#         # ======= 拷贝父类 StereoDataset.__getitem__ 的主要逻辑（双目->视差->深度） =======
-#         color_path = self.color_paths[idx]
-#         color_path_r = self.color_paths_r[idx]
-#         pose = self.poses[idx]
-
-#         image = cv2.imread(color_path, 0)      # 左灰度
-#         image_r = cv2.imread(color_path_r, 0)  # 右灰度
-
-#         if self.disorted:
-#             image   = cv2.remap(image,   self.map1x,   self.map1y,   cv2.INTER_LINEAR)
-#             image_r = cv2.remap(image_r, self.map1x_r, self.map1y_r, cv2.INTER_LINEAR)
-
-#         stereo = cv2.StereoSGBM_create(minDisparity=0, numDisparities=64, blockSize=20)
-#         stereo.setUniquenessRatio(40)
-#         disparity = stereo.compute(image, image_r) / 16.0
-#         disparity[disparity == 0] = 1e10
-#         depth = 47.90639384423901 / disparity      # baseline*fx（沿用你原来的配置）
-#         depth[depth < 0] = 0
-
-#         # 左图转成三通道张量（和父类一致）
-#         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-#         image = (
-#             torch.from_numpy(image / 255.0)
-#             .clamp(0.0, 1.0)
-#             .permute(2, 0, 1)
-#             .to(device=self.device, dtype=self.dtype)
-#         )
-#         pose = torch.from_numpy(pose).to(device=self.device)
-
-#         # ======= 新增：加载 mask（与左相机对齐） =======
-#         mask_path = self.mask_paths[idx]
-#         # 二值化到 {0,1}；若分辨率不匹配则 resize 到 (width,height)
-#         mask_np = np.array(Image.open(mask_path).convert("L"))
-#         if mask_np.shape[:2] != (self.height, self.width):
-#             mask_np = cv2.resize(mask_np, (self.width, self.height), interpolation=cv2.INTER_NEAREST)
-#         mask_np = (mask_np > 127).astype(np.float32)  # 阈值可按需要调整
-#         mask = torch.from_numpy(mask_np).unsqueeze(0).to(device=self.device, dtype=self.dtype)
-
-#         # 注意：现在返回 4 个值（包含 mask）
-#         return image, depth, pose, mask
 
 class StereoMISDataset(StereoDataset):
     def __init__(self, args, path, config):
@@ -723,30 +612,15 @@ class StereoMISDataset(StereoDataset):
 
 class MonomisDataset(MonocularDataset):
     def __init__(self, args, path, config):
-        # 先用 Parser 解析
-        dataset_path = config["Dataset"]["dataset_path"]
-        parser = MonomisParser(dataset_path, start_idx=config["Dataset"]["start_idx"])
-
-        # 确保 Calibration 节点存在
-        if "Calibration" not in config["Dataset"]:
-            config["Dataset"]["Calibration"] = {}
-
-        # 把 parser.intrinsics 全部写回 config
-        for key in [
-            "fx", "fy", "cx", "cy",
-            "width", "height",
-            "k1", "k2", "p1", "p2", "k3", "distorted"
-        ]:
-            config["Dataset"]["Calibration"][key] = parser.intrinsics[key]
-
-        # 调父类构造（MonocularDataset 需要这些参数）
         super().__init__(args, path, config)
-
-        # 保存 parser 的结果
+        dataset_path = config["Dataset"]["dataset_path"]
+        parser = MonomisParser(dataset_path)
         self.num_imgs = parser.n_img
         self.color_paths = parser.color_paths
+        self.depth_paths = parser.depth_paths
         self.poses = parser.poses
-        self.intrinsics = parser.intrinsics
+        self.frames = parser.frames
+
 
 
 class RealsenseDataset(BaseDataset):
